@@ -20,7 +20,7 @@ function createAlert(text, destination){
 
 	const readButton = new TouchBarButton({
 		label : 'Read Now',
-		background : '#26747a',
+		backgroundColor : '#26747a',
 		textColor : '#FFFFFF',
 		click : () => {
 			console.log(`Reading ${destination}`);
@@ -29,7 +29,7 @@ function createAlert(text, destination){
 
 	const myFTButton = new TouchBarButton({
 		label : 'Save to MyFT',
-		background : '#9e2f50',
+		backgroundColor : '#9e2f50',
 		textColor : '#FFFFFF',
 		click : () => {
 			console.log(`Saving ${destination} to MyFT`);
@@ -37,7 +37,7 @@ function createAlert(text, destination){
 	});
 
 	const ftBar = new TouchBar([
-		iconButton,
+		// iconButton,
 		headline,
 		readButton,
 		myFTButton
@@ -55,10 +55,14 @@ app.once('ready', () => {
 	window = new BrowserWindow({
 		frame: false,
 		titleBarStyle: 'hidden-inset',
-		width: 200,
-		height: 200,
-		backgroundColor: '#000'
+		width: 1,
+		height: 1,
+		frame: false,
+		titleBarStyle : 'hidden',
+		transparent : true
 	});
+	
+	window.setIgnoreMouseEvents(true);
 	
 	createAlert();
 
