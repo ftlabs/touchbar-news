@@ -1,12 +1,16 @@
 const electron = require('electron');
 const ioHook = require('iohook');
+const fetch = require('node-fetch');
+
+const CAPI_KEY = require('fs').readFileSync(`${__dirname}/capi_key.txt`, {encoding : 'utf8'});
+
+console.log(CAPI_KEY);
 
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const TouchBar = electron.TouchBar;
 const Tray = electron.Tray;
 const Menu = electron.Menu;
-
 
 const shell = electron.shell;
 
@@ -22,7 +26,7 @@ function prepareHeadline(text){
 
 function createAlert(text, destination){
 
-	console.log('alert');
+	console.log('ALERT:', text, destination);
 
 	if( (Date.now() * 1) - timeSinceLastSystemInteraction < timeIdleBeforeNotificationCanBeShown){
 		return false;
@@ -64,11 +68,6 @@ function createAlert(text, destination){
 	window.show();
 	window.setTouchBar(ftBar);
 
-	setTimeout( () => {
-		window.setTouchBar(null);
-		window.hide();
-	}, 5000 );
-
 }
 
 function updateInteraction(event){
@@ -76,14 +75,84 @@ function updateInteraction(event){
 	timeSinceLastSystemInteraction = Date.now() * 1;
 }
 
+app.on('browser-window-blur', () => {
+	console.log('app lost focus');
+	if(window !== undefined){
+		window.setTouchBar(null);
+	}
+});
+
+function bindIOHookEvents(eventsList){
+
+	eventsList.forEach(event => {
+		ioHook.on(event, updateInteraction);
+	});
+
+}
+
+function generateDatestamp(currentTime){
+	const timeInPast = currentTime - (120 * 1000);
+	return JSON.parse( JSON.stringify( { d : new Date(timeInPast)} ) ).d;
+}
+
+const displayedStories = [];
+
+function checkForNewStories(){
+
+	if( (Date.now() * 1) - timeSinceLastSystemInteraction < timeIdleBeforeNotificationCanBeShown){
+		return false;
+	}
+
+	console.log(displayedStories);
+
+	const now = new Date() * 1;
+	const dateStamp = generateDatestamp(now);
+
+	console.log(dateStamp);
+
+	const URL_ENDPOINT = `https://api.ft.com/content/notifications?since=${dateStamp}&apiKey=${CAPI_KEY}`
+
+	console.log(URL_ENDPOINT);
+
+	fetch(URL_ENDPOINT)
+		.then(res => {
+			if(res.ok){
+				return res;
+			} else {
+				throw res;
+			}
+		})
+		.then(res => res.json())
+		.then(data => {
+			// console.log(data);
+			
+			if(data.notifications.length > 0){
+				if( displayedStories.indexOf(data.notifications[0].id) < 0){
+					createAlert(data.notifications[0].id, data.notifications[0].id.replace('thing', 'content'));
+					displayedStories.push(data.notifications[0].id);
+				}
+			}
+
+		})
+		.catch(err => {
+			console.log(err);
+		})
+	;
+
+}
+
 app.once('ready', () => {
 	console.log('App ready');
 
-	ioHook.on("mousemove", updateInteraction);
+	bindIOHookEvents( [
+		'keypress',
+		'keyup',
+		'keydown',
+		'mousemove',
+		'mousewheel',
+		'mousedrag',
+	]);
 
-	ioHook.on("keypress", updateInteraction);
-	
-	//Register and start hook 
 	ioHook.start();
 
 	window = new BrowserWindow({
@@ -98,31 +167,8 @@ app.once('ready', () => {
 	
 	window.setIgnoreMouseEvents(true);
 
-	/*tray = new Tray('./ft_icon.png');
-	const contextMenu = Menu.buildFromTemplate([
-		{label: 'Item1', type: 'radio'},
-		{label: 'Item2', type: 'radio'},
-		{label: 'Item3', type: 'radio', checked: true},
-		{label: 'Item4', type: 'radio'}
-	]);
-	tray.setToolTip('Configure FT Touch Bar notifications');
-	tray.setContextMenu(contextMenu);*/
+	checkForNewStories();
 
-	const demoPairs = [
-		['M&S pulls advertising from YouTube over extremist videos', 'https://www.ft.com/content/2fb33e91-c7c3-3a6b-a0e4-e9c706426fc9'],
-		['Britain and Germany set to sign defence co-operation deal', 'https://www.ft.com/content/2deb3c7c-0ca7-11e7-b030-768954394623'],
-		['Theresa May to trigger Brexit process on March 29', 'https://www.ft.com/content/36d5e3a4-0d61-11e7-b030-768954394623'],
-		['Trump denies Russian collusion as Comey heads to Capitol Hill', 'https://www.ft.com/content/20778696-0d64-11e7-b030-768954394623']
-	]
+	setInterval(checkForNewStories, 10000);	
 
-	setInterval(function(){
-		console.log('Interval');
-		const r = Math.random() * demoPairs.length | 0;
-
-		createAlert(demoPairs[r][0], demoPairs[r][1]);
-
-	}, 7000);
-
-	createAlert('M&S pulls advertising from YouTube over extremist videos', 'https://www.ft.com/content/2fb33e91-c7c3-3a6b-a0e4-e9c706426fc9');
-	
 });
