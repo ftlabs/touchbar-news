@@ -4,18 +4,22 @@ const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const TouchBar = electron.TouchBar;
 
+const shell = electron.shell;
+
 const {TouchBarLabel, TouchBarButton, TouchBarSpacer} = TouchBar;
 
 let window;
 
+function prepareHeadline(text){
+	return `FT.com: ${text.slice(0,45)}...`;
+}
+
 function createAlert(text, destination){
 
-	const iconButton = new TouchBarButton({
-		icon : './ft_icon.png'
-	});
+	console.log('alert');
 
 	const headline = new TouchBarLabel({
-		label : 'M&S pulls advertising from YouTube over extremist videos'
+		label : prepareHeadline(text)
 	});
 
 	const readButton = new TouchBarButton({
@@ -24,6 +28,7 @@ function createAlert(text, destination){
 		textColor : '#FFFFFF',
 		click : () => {
 			console.log(`Reading ${destination}`);
+			shell.openExternal(destination);
 		}
 	});
 
@@ -37,14 +42,18 @@ function createAlert(text, destination){
 	});
 
 	const ftBar = new TouchBar([
-		// iconButton,
 		headline,
 		readButton,
 		myFTButton
 	]);
 	
-	window.loadURL('about:blank');
+	window.show();
 	window.setTouchBar(ftBar);
+
+	setTimeout( () => {
+		window.setTouchBar(null);
+		window.hide();
+	}, 5000 );
 
 }
 
@@ -63,7 +72,22 @@ app.once('ready', () => {
 	});
 	
 	window.setIgnoreMouseEvents(true);
-	
-	createAlert();
 
+	const demoPairs = [
+		['M&S pulls advertising from YouTube over extremist videos', 'https://www.ft.com/content/2fb33e91-c7c3-3a6b-a0e4-e9c706426fc9'],
+		['Britain and Germany set to sign defence co-operation deal', 'https://www.ft.com/content/2deb3c7c-0ca7-11e7-b030-768954394623'],
+		['Theresa May to trigger Brexit process on March 29', 'https://www.ft.com/content/36d5e3a4-0d61-11e7-b030-768954394623'],
+		['Trump denies Russian collusion as Comey heads to Capitol Hill', 'https://www.ft.com/content/20778696-0d64-11e7-b030-768954394623']
+	]
+
+	setInterval(function(){
+		console.log('Interval');
+		const r = Math.random() * demoPairs.length | 0;
+
+		createAlert(demoPairs[r][0], demoPairs[r][1]);
+
+	}, 7000);
+
+	createAlert('M&S pulls advertising from YouTube over extremist videos', 'https://www.ft.com/content/2fb33e91-c7c3-3a6b-a0e4-e9c706426fc9');
+	
 });
