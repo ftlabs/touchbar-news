@@ -1,5 +1,13 @@
 {
-  "name"    : "ftlabs-touchbar-news",
-  "version" : "0.1.0",
-  "main"    : "main.js"
+  "name": "ftlabs-touchbar-news",
+  "version": "0.1.0",
+  "main": "main.js",
+  "dependencies": {
+    "iohook": "^0.1.2",
+    "run-applescript": "^3.0.0"
+  },
+  "cmake-js": {
+    "runtime": "electron",
+    "runtimeVersion": "1.6.3"
+  }
 }
