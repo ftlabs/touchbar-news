@@ -2,12 +2,12 @@
   "name": "ftlabs-touchbar-news",
   "version": "0.1.0",
   "main": "main.js",
-  "scripts" : {
-    "preinstall" : "brew install cmake automake libtool pkg-config"
+  "scripts": {
+    "preinstall": "brew install cmake automake libtool pkg-config"
   },
   "dependencies": {
     "iohook": "^0.1.2",
-    "run-applescript": "^3.0.0"
+    "node-fetch": "^1.6.3"
   },
   "cmake-js": {
     "runtime": "electron",
