@@ -1,14 +1,20 @@
 const electron = require('electron');
+const ioHook = require('iohook');
 
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const TouchBar = electron.TouchBar;
+const Tray = electron.Tray;
+const Menu = electron.Menu;
+
 
 const shell = electron.shell;
 
 const {TouchBarLabel, TouchBarButton, TouchBarSpacer} = TouchBar;
 
 let window;
+let timeSinceLastSystemInteraction = Date.now() * 1;
+const timeIdleBeforeNotificationCanBeShown = 10000;
 
 function prepareHeadline(text){
 	return `FT.com: ${text.slice(0,45)}...`;
@@ -17,6 +23,10 @@ function prepareHeadline(text){
 function createAlert(text, destination){
 
 	console.log('alert');
+
+	if( (Date.now() * 1) - timeSinceLastSystemInteraction < timeIdleBeforeNotificationCanBeShown){
+		return false;
+	}
 
 	const headline = new TouchBarLabel({
 		label : prepareHeadline(text)
@@ -28,7 +38,9 @@ function createAlert(text, destination){
 		textColor : '#FFFFFF',
 		click : () => {
 			console.log(`Reading ${destination}`);
+			window.setTouchBar(null);
 			shell.openExternal(destination);
+			timeSinceLastSystemInteraction = Date.now() * 1;
 		}
 	});
 
@@ -38,6 +50,8 @@ function createAlert(text, destination){
 		textColor : '#FFFFFF',
 		click : () => {
 			console.log(`Saving ${destination} to MyFT`);
+			window.setTouchBar(null);
+			timeSinceLastSystemInteraction = Date.now() * 1;
 		}
 	});
 
@@ -57,9 +71,20 @@ function createAlert(text, destination){
 
 }
 
+function updateInteraction(event){
+	// console.log('Interaction:', event);
+	timeSinceLastSystemInteraction = Date.now() * 1;
+}
 
 app.once('ready', () => {
 	console.log('App ready');
+
+	ioHook.on("mousemove", updateInteraction);
+
+	ioHook.on("keypress", updateInteraction);
+	
+	//Register and start hook 
+	ioHook.start();
 
 	window = new BrowserWindow({
 		frame: false,
@@ -72,6 +97,16 @@ app.once('ready', () => {
 	});
 	
 	window.setIgnoreMouseEvents(true);
+
+	/*tray = new Tray('./ft_icon.png');
+	const contextMenu = Menu.buildFromTemplate([
+		{label: 'Item1', type: 'radio'},
+		{label: 'Item2', type: 'radio'},
+		{label: 'Item3', type: 'radio', checked: true},
+		{label: 'Item4', type: 'radio'}
+	]);
+	tray.setToolTip('Configure FT Touch Bar notifications');
+	tray.setContextMenu(contextMenu);*/
 
 	const demoPairs = [
 		['M&S pulls advertising from YouTube over extremist videos', 'https://www.ft.com/content/2fb33e91-c7c3-3a6b-a0e4-e9c706426fc9'],
